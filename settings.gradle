@@ -1,0 +1,3 @@
+rootProject.name='UploadMultiImageDemo'
+include ':app'
+include ':multiimagelibrary'

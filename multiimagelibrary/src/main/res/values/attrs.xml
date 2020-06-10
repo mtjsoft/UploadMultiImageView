@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="UploadMultiImageView">
+        <!--图片的高度-->
+        <attr name="img_height" format="dimension"></attr>
+        <!--间距-->
+        <attr name="item_spacing" format="dimension"></attr>
+        <!--列数-->
+        <attr name="column_count" format="integer"></attr>
+        <!--最大张数-->
+        <attr name="max_count" format="integer"></attr>
+        <!--是否显示删除按钮-->
+        <attr name="is_showDelete" format="boolean"></attr>
+        <!--是否显示新增按钮-->
+        <attr name="is_showAdd" format="boolean"></attr>
+        <!--删除按钮-->
+        <attr name="deleteRes" format="reference"></attr>
+        <!--新增按钮-->
+        <attr name="addRes" format="reference"></attr>
+        <!--是否开启拖拽-->
+        <attr name="is_Drag" format="boolean"></attr>
+    </declare-styleable>
+</resources>

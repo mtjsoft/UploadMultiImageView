@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <cn.mtjsoft.multiimagelibrary.UploadMultiImageView
+        android:id="@+id/uploadMultiImageView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#fff"
+        app:column_count="3"
+        app:img_height="120dp"
+        app:is_Drag="true"
+        app:is_showAdd="true"
+        app:item_spacing="1dp"
+        app:max_count="9" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
