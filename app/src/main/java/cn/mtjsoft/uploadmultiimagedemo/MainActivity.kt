@@ -20,16 +20,26 @@ class MainActivity : AppCompatActivity() {
 
         uploadMultiImageView
             .setImageInfoList(list.toList())
+            // 所有属性都可以在代码中再设置
+            // 开启拖拽排序
+            .setDrag(true)
+            // 设置每行3列
+            .setColumns(3)
+            // 显示新增按钮
+            .setShowAdd(true)
+            // item点击回调
             .setImageItemClickListener { position ->
                 // imageview点击
                 Toast.makeText(baseContext, "点击第了${position}个", Toast.LENGTH_SHORT).show()
             }
+            // 图片加载
             .setImageViewLoader { context, path, imageView ->
-                // 图片加载
+                // （这里自己选择图片加载框架，不做限制）
                 imageView.setImageResource(path as Int)
             }
+            // 新增按钮点击回调
             .setAddClickListener {
-                // 新增按钮点击
+                // 模拟新增一条数据
                 addNewData()
             }
             .show()
