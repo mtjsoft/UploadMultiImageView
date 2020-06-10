@@ -10,16 +10,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         val list: MutableList<ImageModel> = ArrayList()
         for (i in 0..7) {
             val model = ImageModel()
-            model.path = R.drawable.ic_launcher_background
+            model.path = R.mipmap.android
             list.add(model)
         }
 
         uploadMultiImageView
             .setImageInfoList(list.toList())
-            .setImageItemClickListener { position, imageView ->
+            .setImageItemClickListener { position ->
                 // imageview点击
                 Toast.makeText(baseContext, "点击第了${position}个", Toast.LENGTH_SHORT).show()
             }
@@ -27,7 +28,7 @@ class MainActivity : AppCompatActivity() {
                 // 图片加载
                 imageView.setImageResource(path as Int)
             }
-            .setAddClickListener { position, imageView ->
+            .setAddClickListener {
                 // 新增按钮点击
                 addNewData()
             }
@@ -40,7 +41,7 @@ class MainActivity : AppCompatActivity() {
     private fun addNewData() {
         val tempList: MutableList<ImageModel> = ArrayList()
         val model = ImageModel()
-        model.path = R.drawable.ic_launcher_background
+        model.path = R.mipmap.android
         tempList.add(model)
         // 新增数据
         uploadMultiImageView.addNewData(tempList.toList())

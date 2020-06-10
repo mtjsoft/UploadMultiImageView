@@ -16,6 +16,10 @@
         <attr name="is_showAdd" format="boolean"></attr>
         <!--删除按钮-->
         <attr name="deleteRes" format="reference"></attr>
+        <!--删除按钮宽高-->
+        <attr name="deleteWH" format="dimension"></attr>
+        <!--删除按钮Margin-->
+        <attr name="deleteResMargin" format="dimension"></attr>
         <!--新增按钮-->
         <attr name="addRes" format="reference"></attr>
         <!--是否开启拖拽-->

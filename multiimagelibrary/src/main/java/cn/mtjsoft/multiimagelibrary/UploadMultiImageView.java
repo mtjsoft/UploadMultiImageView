@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -27,10 +28,12 @@ import java.util.Collections;
 import java.util.List;
 
 import cn.mtjsoft.multiimagelibrary.bean.AddBean;
+import cn.mtjsoft.multiimagelibrary.imp.ImageAddClickListener;
 import cn.mtjsoft.multiimagelibrary.imp.ImageInfo;
 import cn.mtjsoft.multiimagelibrary.imp.ImageItemClickListener;
 import cn.mtjsoft.multiimagelibrary.imp.ImageViewLoader;
 import cn.mtjsoft.multiimagelibrary.utils.HHDensityUtils;
+import cn.mtjsoft.multiimagelibrary.utils.HHScreenUtils;
 
 public class UploadMultiImageView extends RecyclerView {
 
@@ -45,7 +48,7 @@ public class UploadMultiImageView extends RecyclerView {
     // 图片点击回调
     private ImageItemClickListener imageItemClickListener;
     // 新增按钮点击回调
-    private ImageItemClickListener addClickListener;
+    private ImageAddClickListener addClickListener;
     // 间隔大小 默认2dp
     private int itemDecorationSize = 2;
     // 是否展示删除按钮
@@ -54,8 +57,12 @@ public class UploadMultiImageView extends RecyclerView {
     private boolean isShowAdd = false;
     // 设置删除按钮
     private int deleteRes = R.drawable.img_delete;
+    // 设置删除按钮按钮大小 默认25dp
+    private int deleteResWH = 25;
+    // 设置删除按钮margin
+    private int deleteResMargin = 6;
     // 设置新增按钮
-    private int addRes = R.drawable.add_img;
+    private int addRes = R.drawable.img_add;
     // 是否开启拖拽排序
     private boolean isDrag = false;
     // 最大显示张数
@@ -63,7 +70,10 @@ public class UploadMultiImageView extends RecyclerView {
     // 每行展示列数
     private int columns = 3;
     // 图片的高度 默认100dp
-    private int imgHeight = 100;
+    private int imgHeight = 0;
+
+    // itemView宽度
+    private int itemViewWidth;
 
     public UploadMultiImageView(Context context) {
         this(context, null);
@@ -83,16 +93,27 @@ public class UploadMultiImageView extends RecyclerView {
             return;
         }
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.UploadMultiImageView);
-        imgHeight = typedArray.getDimensionPixelSize(R.styleable.UploadMultiImageView_img_height, HHDensityUtils.dip2px(getContext(), imgHeight));
+        imgHeight = typedArray.getDimensionPixelSize(R.styleable.UploadMultiImageView_img_height, 0);
         itemDecorationSize = typedArray.getDimensionPixelSize(R.styleable.UploadMultiImageView_item_spacing, HHDensityUtils.dip2px(getContext(), itemDecorationSize));
         columns = typedArray.getInt(R.styleable.UploadMultiImageView_column_count, columns);
         maxNumber = typedArray.getInt(R.styleable.UploadMultiImageView_max_count, maxNumber);
         isShowDelete = typedArray.getBoolean(R.styleable.UploadMultiImageView_is_showDelete, isShowDelete);
         isShowAdd = typedArray.getBoolean(R.styleable.UploadMultiImageView_is_showAdd, isShowAdd);
         deleteRes = typedArray.getResourceId(R.styleable.UploadMultiImageView_deleteRes, deleteRes);
+        deleteResWH = typedArray.getDimensionPixelSize(R.styleable.UploadMultiImageView_deleteWH, HHDensityUtils.dip2px(getContext(), deleteResWH));
+        deleteResMargin = typedArray.getDimensionPixelSize(R.styleable.UploadMultiImageView_deleteResMargin, HHDensityUtils.dip2px(getContext(), deleteResMargin));
         addRes = typedArray.getResourceId(R.styleable.UploadMultiImageView_addRes, addRes);
         isDrag = typedArray.getBoolean(R.styleable.UploadMultiImageView_is_Drag, isDrag);
         typedArray.recycle();
+    }
+
+    /**
+     * @param imgHeight 设置图片高度，默认与宽度相等
+     * @return
+     */
+    public UploadMultiImageView setImgHeight(int imgHeight) {
+        this.imgHeight = HHDensityUtils.dip2px(getContext(), imgHeight);
+        return this;
     }
 
     /**
@@ -108,6 +129,24 @@ public class UploadMultiImageView extends RecyclerView {
      */
     public UploadMultiImageView setDeleteRes(int deleteRes) {
         this.deleteRes = deleteRes;
+        return this;
+    }
+
+    /**
+     * @param deleteResWH 设置删除按钮宽高
+     * @return
+     */
+    public UploadMultiImageView setDeleteResWH(int deleteResWH) {
+        this.deleteResWH = HHDensityUtils.dip2px(getContext(), deleteResWH);
+        return this;
+    }
+
+    /**
+     * @param deleteResMargin 设置删除按钮 Margin
+     * @return
+     */
+    public UploadMultiImageView setDeleteResMargin(int deleteResMargin) {
+        this.deleteResMargin = HHDensityUtils.dip2px(getContext(), deleteResMargin);
         return this;
     }
 
@@ -131,7 +170,7 @@ public class UploadMultiImageView extends RecyclerView {
      * @param itemDecorationSize 间隔大小
      */
     public UploadMultiImageView setItemDecorationSize(int itemDecorationSize) {
-        this.itemDecorationSize = itemDecorationSize;
+        this.itemDecorationSize = HHDensityUtils.dip2px(getContext(), itemDecorationSize);
         return this;
     }
 
@@ -189,7 +228,7 @@ public class UploadMultiImageView extends RecyclerView {
     /**
      * @param addClickListener 新增按钮点击
      */
-    public UploadMultiImageView setAddClickListener(ImageItemClickListener addClickListener) {
+    public UploadMultiImageView setAddClickListener(ImageAddClickListener addClickListener) {
         this.addClickListener = addClickListener;
         return this;
     }
@@ -200,12 +239,15 @@ public class UploadMultiImageView extends RecyclerView {
         }
         addItemDecoration();
         addViewData();
-        if (maxNumber > 0 && maxNumber < imageInfoList.size()) { // 超出最大显示值，直接截取
-            imageInfoList = imageInfoList.subList(0, maxNumber);
-        }
         this.setLayoutManager(new GridLayoutManager(getContext(), columns));
-        uploadImageAdapter = new UploadImageAdapter(R.layout.item_def, imageInfoList);
-        this.setAdapter(uploadImageAdapter);
+        this.post(new Runnable() {
+            @Override
+            public void run() {
+                itemViewWidth = (getMeasuredWidth() - (columns + 1) * itemDecorationSize) / columns;
+                uploadImageAdapter = new UploadImageAdapter(R.layout.item_def, imageInfoList);
+                setAdapter(uploadImageAdapter);
+            }
+        });
     }
 
     /**
@@ -247,7 +289,7 @@ public class UploadMultiImageView extends RecyclerView {
                 public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull State state) {
                     super.getItemOffsets(outRect, view, parent, state);
                     int posi = parent.getChildAdapterPosition(view);
-                    int itemPad = HHDensityUtils.dip2px(getContext(), itemDecorationSize);
+                    int itemPad = itemDecorationSize;
                     boolean isLastRaw = isLastRaw(posi, columns, imageInfoList.size());
                     if (isFirstColum(posi, columns)) { // 第一列
                         if (isLastRaw) {
@@ -279,20 +321,18 @@ public class UploadMultiImageView extends RecyclerView {
     /**
      * 添加新增按钮
      */
-    private boolean addViewData() {
-        boolean isSuccess = false;
+    private void addViewData() {
         if (isShowAdd && maxNumber > imageInfoList.size()) {
-            AddBean bean = new AddBean();
-            bean.setAddPath(addRes);
-            bean.setAdd(true);
             if (imageInfoList.size() == 0 || !imageInfoList.get(imageInfoList.size() - 1).isLastAddViewData()) {
+                AddBean bean = new AddBean();
+                bean.setAddPath(addRes);
+                bean.setAdd(true);
                 imageInfoList.add(bean);
-                isSuccess = true;
-            } else {
-                isSuccess = false;
             }
         }
-        return isSuccess;
+        if (maxNumber > 0 && maxNumber < imageInfoList.size()) { // 超出最大显示值，直接截取
+            imageInfoList = imageInfoList.subList(0, maxNumber);
+        }
     }
 
     /**
@@ -339,28 +379,33 @@ public class UploadMultiImageView extends RecyclerView {
 
         private ViewGroup.LayoutParams layoutParams;
 
+        private FrameLayout.LayoutParams deleteViewParams;
+
         public UploadImageAdapter(int layoutResId, List<ImageInfo> data) {
             super(layoutResId, data);
-            layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, imgHeight);
+            layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, imgHeight <= 0 ? itemViewWidth : imgHeight);
+            deleteViewParams = new FrameLayout.LayoutParams(deleteResWH, deleteResWH);
+            deleteViewParams.topMargin = deleteResMargin;
+            deleteViewParams.rightMargin = deleteResMargin;
+            deleteViewParams.gravity = Gravity.END;
         }
 
         @Override
         protected void convert(@NotNull final BaseViewHolder baseViewHolder, ImageInfo imageInfo) {
-//            final int position = baseViewHolder.getAdapterPosition();
             FrameLayout frameLayout = baseViewHolder.getView(R.id.fl_layout);
             frameLayout.setLayoutParams(layoutParams);
             final ImageView imageView = baseViewHolder.getView(R.id.iv_item);
             ImageView deleteImage = baseViewHolder.getView(R.id.iv_delete);
             deleteImage.setImageResource(deleteRes);
             deleteImage.setVisibility(isShowDelete && !imageInfo.isLastAddViewData() ? VISIBLE : GONE);
+            deleteImage.setLayoutParams(deleteViewParams);
             if (imageInfo.isLastAddViewData()) {
                 imageView.setImageResource(addRes);
                 imageView.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         if (addClickListener != null) {
-                            int position = baseViewHolder.getAdapterPosition();
-                            addClickListener.ImageItemClick(position, imageView);
+                            addClickListener.ImageAddClick();
                         }
                     }
                 });
@@ -373,12 +418,8 @@ public class UploadMultiImageView extends RecyclerView {
                     public void onClick(View v) {
                         int position = baseViewHolder.getAdapterPosition();
                         imageInfoList.remove(position);
-                        uploadImageAdapter.notifyItemRemoved(position);
-                        uploadImageAdapter.notifyItemRangeChanged(position, imageInfoList.size() - position);
-                        // 移除之后，判断是否需要继续显示新增按钮
-                        if (addViewData()) { // 成功则刷新
-                            uploadImageAdapter.notifyItemInserted(imageInfoList.size() - 1);
-                        }
+                        addViewData();
+                        uploadImageAdapter.notifyDataSetChanged();
                     }
                 });
                 imageView.setOnClickListener(new OnClickListener() {
@@ -386,7 +427,7 @@ public class UploadMultiImageView extends RecyclerView {
                     public void onClick(View v) {
                         if (imageItemClickListener != null) {
                             int position = baseViewHolder.getAdapterPosition();
-                            imageItemClickListener.ImageItemClick(position, imageView);
+                            imageItemClickListener.ImageItemClick(position);
                         }
                     }
                 });
@@ -400,7 +441,11 @@ public class UploadMultiImageView extends RecyclerView {
     private class ItemDragTouchCallback extends ItemTouchHelper.Callback {
         @Override
         public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-            int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
+            int dragFlags = 0;
+            int position = viewHolder.getAdapterPosition();
+            if (isDrag && (!isShowAdd || !imageInfoList.get(position).isLastAddViewData())) {
+                dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
+            }
             return makeMovementFlags(dragFlags, 0);
         }
 
@@ -415,7 +460,7 @@ public class UploadMultiImageView extends RecyclerView {
             //拿到当前拖拽到的item的viewHolder
             int toPosition = target.getAdapterPosition();
             // 当存在新增按钮时，当前和目标值，不能是最后一个新增按钮
-            return !isShowAdd || maxNumber >= imageInfoList.size() || (fromPosition < imageInfoList.size() - 1 && toPosition < imageInfoList.size() - 1);
+            return !isShowAdd || (!imageInfoList.get(fromPosition).isLastAddViewData() && !imageInfoList.get(toPosition).isLastAddViewData());
         }
 
         @Override
@@ -457,14 +502,14 @@ public class UploadMultiImageView extends RecyclerView {
         public void onSelectedChanged(@Nullable ViewHolder viewHolder, int actionState) {
             if (viewHolder != null && actionState != ItemTouchHelper.ACTION_STATE_IDLE) {
                 int position = viewHolder.getAdapterPosition();
-                if (isDrag && (!isShowAdd || maxNumber >= imageInfoList.size() || position < imageInfoList.size() - 1)) {
+                if (isDrag && (!isShowAdd || !imageInfoList.get(position).isLastAddViewData())) {
                     AnimatorSet animatorSet = new AnimatorSet();
                     ObjectAnimator animatorScaleX =
                             ObjectAnimator.ofFloat(viewHolder.itemView, "ScaleX", 1.0f, 0.85f);
                     ObjectAnimator animatorScaleY =
                             ObjectAnimator.ofFloat(viewHolder.itemView, "ScaleY", 1.0f, 0.85f);
                     animatorSet.playTogether(animatorScaleX, animatorScaleY);
-                    animatorSet.setDuration(300L);
+                    animatorSet.setDuration(200L);
                     animatorSet.start();
                 }
             }
@@ -474,7 +519,7 @@ public class UploadMultiImageView extends RecyclerView {
         @Override
         public void clearView(@NonNull RecyclerView recyclerView, @NonNull ViewHolder viewHolder) {
             int position = viewHolder.getAdapterPosition();
-            if (isDrag && (!isShowAdd || maxNumber >= imageInfoList.size() || position < imageInfoList.size() - 1)) {
+            if (isDrag && (!isShowAdd || !imageInfoList.get(position).isLastAddViewData())) {
                 AnimatorSet animatorSet = new AnimatorSet();
                 ObjectAnimator animatorScaleX =
                         ObjectAnimator.ofFloat(viewHolder.itemView, "ScaleX", 0.85f, 1.0f);
