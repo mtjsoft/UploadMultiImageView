@@ -18,22 +18,17 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.chad.library.adapter.base.BaseQuickAdapter;
-import com.chad.library.adapter.base.viewholder.BaseViewHolder;
-
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import cn.mtjsoft.multiimagelibrary.bean.AddBean;
 import cn.mtjsoft.multiimagelibrary.imp.ImageAddClickListener;
+import cn.mtjsoft.multiimagelibrary.imp.ImageDeleteClickListener;
 import cn.mtjsoft.multiimagelibrary.imp.ImageInfo;
 import cn.mtjsoft.multiimagelibrary.imp.ImageItemClickListener;
 import cn.mtjsoft.multiimagelibrary.imp.ImageViewLoader;
 import cn.mtjsoft.multiimagelibrary.utils.HHDensityUtils;
-import cn.mtjsoft.multiimagelibrary.utils.HHScreenUtils;
 
 public class UploadMultiImageView extends RecyclerView {
 
@@ -49,6 +44,10 @@ public class UploadMultiImageView extends RecyclerView {
     private ImageItemClickListener imageItemClickListener;
     // 新增按钮点击回调
     private ImageAddClickListener addClickListener;
+    // 删除回调
+    private ImageDeleteClickListener deleteClickListener;
+    // 设置图片缩放类型
+    private ImageView.ScaleType scaleType = ImageView.ScaleType.CENTER_CROP;
     // 间隔大小 默认2dp
     private int itemDecorationSize = 2;
     // 是否展示删除按钮
@@ -202,9 +201,8 @@ public class UploadMultiImageView extends RecyclerView {
      * @param imageInfoList 设置数据
      */
     public UploadMultiImageView setImageInfoList(List<ImageInfo> imageInfoList) {
-        this.imageInfoList.clear();
-        if (imageInfoList != null && imageInfoList.size() > 0) {
-            this.imageInfoList.addAll(imageInfoList);
+        if (imageInfoList != null) {
+            this.imageInfoList = imageInfoList;
         }
         return this;
     }
@@ -233,6 +231,28 @@ public class UploadMultiImageView extends RecyclerView {
         return this;
     }
 
+    /**
+     * 删除点击回调
+     *
+     * @param deleteClickListener
+     * @return
+     */
+    public UploadMultiImageView setDeleteClickListener(ImageDeleteClickListener deleteClickListener) {
+        this.deleteClickListener = deleteClickListener;
+        return this;
+    }
+
+    /**
+     * 设置图片缩放类型
+     *
+     * @param scaleType
+     * @return
+     */
+    public UploadMultiImageView setScaleType(ImageView.ScaleType scaleType) {
+        this.scaleType = scaleType;
+        return this;
+    }
+
     public void show() {
         if (isDrag) {
             itemTouchHelper.attachToRecyclerView(this);
@@ -244,7 +264,7 @@ public class UploadMultiImageView extends RecyclerView {
             @Override
             public void run() {
                 itemViewWidth = (getMeasuredWidth() - (columns + 1) * itemDecorationSize) / columns;
-                uploadImageAdapter = new UploadImageAdapter(R.layout.item_def, imageInfoList);
+                uploadImageAdapter = new UploadImageAdapter(getContext(), imageInfoList);
                 setAdapter(uploadImageAdapter);
             }
         });
@@ -262,6 +282,28 @@ public class UploadMultiImageView extends RecyclerView {
             if (uploadImageAdapter != null) {
                 uploadImageAdapter.notifyDataSetChanged();
             }
+        }
+    }
+
+    /**
+     * 刷新数据
+     */
+    public void notifyDataSetChanged() {
+        if (uploadImageAdapter != null) {
+            uploadImageAdapter.notifyDataSetChanged();
+        }
+    }
+
+    /**
+     * 删除指定item
+     *
+     * @param position
+     */
+    public void deleteItem(int position) {
+        if (position >= 0 && position < imageInfoList.size()) {
+            imageInfoList.remove(position);
+            addViewData();
+            uploadImageAdapter.notifyDataSetChanged();
         }
     }
 
@@ -375,14 +417,19 @@ public class UploadMultiImageView extends RecyclerView {
     /**
      * adapter
      */
-    private class UploadImageAdapter extends BaseQuickAdapter<ImageInfo, BaseViewHolder> {
+    private class UploadImageAdapter extends RecyclerView.Adapter<UploadImageAdapter.MyViewHolder> {
 
         private ViewGroup.LayoutParams layoutParams;
 
         private FrameLayout.LayoutParams deleteViewParams;
 
-        public UploadImageAdapter(int layoutResId, List<ImageInfo> data) {
-            super(layoutResId, data);
+        private Context context;
+
+        private List<ImageInfo> data;
+
+        public UploadImageAdapter(Context context, List<ImageInfo> data) {
+            this.context = context;
+            this.data = data;
             layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, imgHeight <= 0 ? itemViewWidth : imgHeight);
             deleteViewParams = new FrameLayout.LayoutParams(deleteResWH, deleteResWH);
             deleteViewParams.topMargin = deleteResMargin;
@@ -390,47 +437,73 @@ public class UploadMultiImageView extends RecyclerView {
             deleteViewParams.gravity = Gravity.END;
         }
 
+        @NonNull
         @Override
-        protected void convert(@NotNull final BaseViewHolder baseViewHolder, ImageInfo imageInfo) {
-            FrameLayout frameLayout = baseViewHolder.getView(R.id.fl_layout);
-            frameLayout.setLayoutParams(layoutParams);
-            final ImageView imageView = baseViewHolder.getView(R.id.iv_item);
-            ImageView deleteImage = baseViewHolder.getView(R.id.iv_delete);
-            deleteImage.setImageResource(deleteRes);
-            deleteImage.setVisibility(isShowDelete && !imageInfo.isLastAddViewData() ? VISIBLE : GONE);
-            deleteImage.setLayoutParams(deleteViewParams);
+        public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            return new MyViewHolder(View.inflate(context, R.layout.item_def, null));
+        }
+
+
+        @Override
+        public int getItemCount() {
+            return data == null ? 0 : data.size();
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
+            ImageInfo imageInfo = data.get(position);
+            holder.frameLayout.setLayoutParams(layoutParams);
+            holder.deleteImage.setImageResource(deleteRes);
+            holder.deleteImage.setVisibility(isShowDelete && !imageInfo.isLastAddViewData() ? VISIBLE : GONE);
+            holder.deleteImage.setLayoutParams(deleteViewParams);
+            holder.imageView.setScaleType(scaleType);
             if (imageInfo.isLastAddViewData()) {
-                imageView.setImageResource(addRes);
-                imageView.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (addClickListener != null) {
-                            addClickListener.ImageAddClick();
-                        }
-                    }
-                });
+                holder.imageView.setImageResource(addRes);
             } else {
                 if (imageViewLoader != null) {
-                    imageViewLoader.displayImage(getContext(), imageInfo.getImagePath(), imageView);
+                    imageViewLoader.displayImage(getContext(), imageInfo.getImagePath(), holder.imageView);
                 }
-                deleteImage.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        int position = baseViewHolder.getAdapterPosition();
-                        imageInfoList.remove(position);
-                        addViewData();
-                        uploadImageAdapter.notifyDataSetChanged();
+                holder.deleteImage.setOnClickListener(new MyClick(position));
+            }
+            holder.imageView.setOnClickListener(new MyClick(position));
+        }
+
+        private class MyClick implements OnClickListener {
+            private int position;
+
+            public MyClick(int position) {
+                this.position = position;
+            }
+
+            @Override
+            public void onClick(View v) {
+                int id = v.getId();
+                if (id == R.id.iv_item) {
+                    if (data.get(position).isLastAddViewData() && addClickListener != null) {
+                        addClickListener.ImageAddClick();
+                    } else if (imageItemClickListener != null) {
+                        imageItemClickListener.ImageItemClick(position);
                     }
-                });
-                imageView.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (imageItemClickListener != null) {
-                            int position = baseViewHolder.getAdapterPosition();
-                            imageItemClickListener.ImageItemClick(position);
-                        }
+                } else if (id == R.id.iv_delete) {
+                    if (deleteClickListener != null) {
+                        deleteClickListener.ImageDeleteClick(UploadMultiImageView.this, position);
+                    } else {
+                        deleteItem(position);
                     }
-                });
+                }
+            }
+        }
+
+        private class MyViewHolder extends ViewHolder {
+            private ImageView imageView;
+            private ImageView deleteImage;
+            private FrameLayout frameLayout;
+
+            public MyViewHolder(@NonNull View baseViewHolder) {
+                super(baseViewHolder);
+                frameLayout = baseViewHolder.findViewById(R.id.fl_layout);
+                imageView = baseViewHolder.findViewById(R.id.iv_item);
+                deleteImage = baseViewHolder.findViewById(R.id.iv_delete);
             }
         }
     }

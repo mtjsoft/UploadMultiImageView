@@ -1,9 +1,13 @@
 package cn.mtjsoft.uploadmultiimagedemo
 
+import android.app.AlertDialog
+import android.content.DialogInterface
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.ImageView
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
+import androidx.appcompat.app.AlertDialog as AppAlertDialog
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,10 +31,23 @@ class MainActivity : AppCompatActivity() {
             .setColumns(3)
             // 显示新增按钮
             .setShowAdd(true)
+            // 设置图片缩放类型 (默认 CENTER_CROP)
+            .setScaleType(ImageView.ScaleType.CENTER_CROP)
             // item点击回调
             .setImageItemClickListener { position ->
                 // imageview点击
                 Toast.makeText(baseContext, "点击第了${position}个", Toast.LENGTH_SHORT).show()
+            }
+            // 设置删除点击监听（如果不设置，测试默认移除数据），自己处理数据删除过程
+            .setDeleteClickListener { multiImageView, position ->
+                AlertDialog.Builder(this)
+                    .setTitle("删除")
+                    .setMessage("确定要删除图片吗？")
+                    .setNegativeButton("确定") { dialog, which ->
+                        dialog.dismiss()
+                        multiImageView.deleteItem(position)
+                    }
+                    .show()
             }
             // 图片加载
             .setImageViewLoader { context, path, imageView ->
