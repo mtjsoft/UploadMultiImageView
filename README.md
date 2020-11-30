@@ -24,7 +24,7 @@ allprojects {
 
 ```java
 dependencies {
-	        implementation 'com.gitee.mtj_java:UploadMultiImageView:1.0.0'
+	        implementation 'com.gitee.mtj_java:UploadMultiImageView:1.1.0'
 	}
 ```
 
@@ -45,6 +45,18 @@ dependencies {
         app:max_count="9" />
 ```
 # 版本及自定义属性说明
+
+V1.1.0
+--------------------------
+新增方法：
+
+```java
+// 设置图片缩放类型 (默认 CENTER_CROP)
+setScaleType(ImageView.ScaleType.CENTER_CROP);
+// 设置删除点击监听（如果不设置，默认直接移除数据），自己处理过程
+setDeleteClickListener();
+```
+
 V1.0.0
 --------------------------
 1.0.0 属性  | 属性说明
@@ -79,33 +91,46 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
-        * 核心实现在这里，是不是只有仅仅十几行代码？
+        * 核心实现在这里
         */
         uploadMultiImageView
-            .setImageInfoList(list.toList())
-            // 所有属性都可以在代码中再设置
-            // 开启拖拽排序
-            .setDrag(true)
-            // 设置每行3列
-            .setColumns(3)
-            // 显示新增按钮
-            .setShowAdd(true)
-            // item点击回调
-            .setImageItemClickListener { position ->
-                // imageview点击
-                Toast.makeText(baseContext, "点击第了${position}个", Toast.LENGTH_SHORT).show()
-            }
-            // 图片加载
-            .setImageViewLoader { context, path, imageView ->
-                // 图片加载（这里自己选择图片加载框架，不做限制）
-                imageView.setImageResource(path as Int)
-            }
-            // 新增按钮点击回调
-            .setAddClickListener {
-                // 模拟新增一条数据
-                addNewData()
-            }
-            .show()
+                    .setImageInfoList(list.toList())
+                    // 所有属性都可以在代码中再设置
+                    // 开启拖拽排序
+                    .setDrag(true)
+                    // 设置每行3列
+                    .setColumns(3)
+                    // 显示新增按钮
+                    .setShowAdd(true)
+                    // 设置图片缩放类型 (默认 CENTER_CROP)
+                    .setScaleType(ImageView.ScaleType.CENTER_CROP)
+                    // item点击回调
+                    .setImageItemClickListener { position ->
+                        // imageview点击
+                        Toast.makeText(baseContext, "点击第了${position}个", Toast.LENGTH_SHORT).show()
+                    }
+                    // 设置删除点击监听（如果不设置，测试默认移除数据），自己处理数据删除过程
+                    .setDeleteClickListener { multiImageView, position ->
+                        AlertDialog.Builder(this)
+                            .setTitle("删除")
+                            .setMessage("确定要删除图片吗？")
+                            .setNegativeButton("确定") { dialog, which ->
+                                dialog.dismiss()
+                                multiImageView.deleteItem(position)
+                            }
+                            .show()
+                    }
+                    // 图片加载
+                    .setImageViewLoader { context, path, imageView ->
+                        // （这里自己选择图片加载框架，不做限制）
+                        imageView.setImageResource(path as Int)
+                    }
+                    // 新增按钮点击回调
+                    .setAddClickListener {
+                        // 模拟新增一条数据
+                        addNewData()
+                    }
+                    .show()
     }
 
     /**
